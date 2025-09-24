@@ -43,7 +43,6 @@ export const CategoryController = {
 
   async remove(req, res) {
     try {
-      const { id } = req.params;
       const result = await CategoryModel.remove(id);
       res.json(result);
     } catch (err) {

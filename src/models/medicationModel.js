@@ -1,12 +1,26 @@
 import { supabase } from "../config/supabaseClient.js";
 
 export const MedicationModel = {
-  async getAll() {
-    const { data, error } = await supabase
+  async getAll({ name, page = 1, limit = 10 }) {
+    let query = supabase
       .from("medications")
       .select(
-        "id, sku, name, description, price, quantity, category_id, supplier_id"
+        `
+        id, sku, name, description, price, quantity,
+        categories ( id, name ),
+        suppliers ( id, name, email, phone )
+      `
       );
+
+    if (name) {
+      query = query.ilike("name", `%${name}%`);
+    }
+
+    const from = (page - 1) * limit;
+    const to = from + Number(limit) - 1;
+    query = query.range(from, to);
+
+    const { data, error } = await query;
     if (error) throw error;
     return data;
   },
@@ -18,7 +32,7 @@ export const MedicationModel = {
         `
         id, sku, name, description, price, quantity,
         categories ( id, name ),
-        suppliers ( id, name, email, phone ),
+        suppliers ( id, name, email, phone )
       `
       )
       .eq("id", id)
@@ -50,5 +64,13 @@ export const MedicationModel = {
     const { error } = await supabase.from("medications").delete().eq("id", id);
     if (error) throw error;
     return { success: true };
+  },
+
+  async getTotal() {
+    const { count, error } = await supabase
+      .from("medications")
+      .select("id", { count: "exact", head: true });
+    if (error) throw error;
+    return count;
   },
 };
